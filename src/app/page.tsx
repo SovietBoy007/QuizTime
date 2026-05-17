@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
 export default async function HomePage() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">

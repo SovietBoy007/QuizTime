@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET all quizzes or search
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 // POST create new quiz
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getAuthSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(

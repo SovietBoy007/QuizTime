@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
 export default async function Navbar() {
-  const session = await auth();
+  const session = await getAuthSession();
 
   return (
     <nav className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">

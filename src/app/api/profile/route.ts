@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET user profile
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getAuthSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -42,9 +42,9 @@ export async function GET(request: NextRequest) {
     const stats = {
       totalQuizzes: allScores.length,
       averageScore: allScores.length > 0
-        ? (allScores.reduce((sum, s) => sum + s.percentage, 0) / allScores.length).toFixed(1)
+        ? (allScores.reduce((sum: number, s: { percentage: number }) => sum + s.percentage, 0) / allScores.length).toFixed(1)
         : 0,
-      totalPoints: allScores.reduce((sum, s) => sum + s.points, 0),
+      totalPoints: allScores.reduce((sum: number, s: { points: number }) => sum + s.points, 0),
     };
 
     const { password, ...userWithoutPassword } = user;
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 // PUT update user profile
 export async function PUT(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getAuthSession();
 
     if (!session?.user?.id) {
       return NextResponse.json(
