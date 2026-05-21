@@ -1,164 +1,110 @@
 # QuizTime - Interactive Quiz Platform 🎯
 
-A modern, feature-rich quiz application built with Next.js, TypeScript, PostgreSQL, and Prisma.
+A modern quiz application built with Next.js, TypeScript, PostgreSQL, and Prisma.
 
-## Features
+## Quick Start
 
-✨ **Core Features:**
-- 👤 User Authentication & Registration
-- 📚 Quiz Creation & Management
-- ❓ Multiple Quiz Types (Multiple Choice, True/False, Short Answer)
-- 🎯 Quiz Taker with Real-time Scoring
-- 🏆 Global Leaderboard
-- 📊 User Statistics & History
-- 👨‍💻 User Profiles
-- 🌈 Modern, Responsive UI with Tailwind CSS
-
-## Tech Stack
-
-- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Backend:** Next.js API Routes, Node.js
-- **Database:** PostgreSQL
-- **ORM:** Prisma
-- **Authentication:** NextAuth.js v5
-- **Security:** bcryptjs for password hashing
-
-## Prerequisites
-
-- Node.js 18+ and npm
-- PostgreSQL database (local or remote)
-- Git
-
-## Installation
-
-1. **Clone the repository**
+### 1. Clone the repo
 ```bash
-git clone <repository-url>
-cd quiztime
+git clone https://github.com/SovietBoy007/QuizTime.git
+cd QuizTime
 ```
 
-2. **Install dependencies**
+### 2. Install dependencies
 ```bash
 npm install
 ```
 
-3. **Set up environment variables**
-Create a `.env.local` file in the root directory:
+### 3. Create environment variables
+Create a `.env.local` file in the project root with your secrets:
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/quiztime"
-NEXTAUTH_SECRET="your-secret-key-change-in-production"
 NEXTAUTH_URL="http://localhost:3000"
-JWT_SECRET="your-jwt-secret-change-in-production"
+NEXTAUTH_SECRET="your-secret-key"
+JWT_SECRET="your-jwt-secret"
 ```
 
-4. **Initialize the database**
+### 4. Set up the database
 ```bash
 npx prisma migrate dev --name init
-```
-
-This will create all the necessary database tables.
-
-5. **Generate Prisma Client**
-```bash
 npx prisma generate
 ```
 
-## Running the Application
-
-**Development mode:**
+### 5. Run the project
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`
+Open: `http://localhost:3000`
 
-**Production build:**
+## How to continue on another device
+
+1. Install `Git` and `Node.js` on the other device.
+2. Clone the repo:
 ```bash
-npm run build
-npm run start
+git clone https://github.com/SovietBoy007/QuizTime.git
+cd QuizTime
+```
+3. Install dependencies:
+```bash
+npm install
+```
+4. Create your own `.env.local` with the correct values.
+5. Run the app:
+```bash
+npm run dev
 ```
 
-## Database Schema
+## Save your work to GitHub
 
-The application uses the following main entities:
+When you finish work locally, run:
+```bash
+git add .
+git commit -m "Save latest QuizTime progress"
+git push origin main
+```
 
-- **User** - User accounts and profiles
-- **Quiz** - Quiz information and metadata
-- **Question** - Questions within a quiz
-- **Answer** - Possible answers for questions
-- **Score** - User scores and quiz results
-- **UserAnswer** - User's answers to questions
-- **ChatMessage** - Messages for AI chat helper
+Then on another device:
+```bash
+git pull origin main
+npm install
+```
 
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/signin` - Sign in user
-- `POST /api/auth/signout` - Sign out user
-
-### Quizzes
-- `GET /api/quizzes` - Get all quizzes
-- `POST /api/quizzes` - Create new quiz
-- `GET /api/quizzes/[id]` - Get specific quiz
-
-### Scores
-- `GET /api/scores` - Get user's scores
-- `POST /api/scores` - Submit quiz and save score
-
-### Leaderboard
-- `GET /api/leaderboard` - Get global leaderboard
-
-### Profile
-- `GET /api/profile` - Get user profile
-- `PUT /api/profile` - Update user profile
-
-## Project Structure
+## Project structure
 
 ```
 quiztime/
 ├── src/
 │   ├── app/
 │   │   ├── api/              # API routes
-│   │   ├── auth/             # Auth pages
-│   │   ├── quizzes/          # Quiz pages
+│   │   ├── auth/             # Auth and login pages
+│   │   ├── quizzes/          # Quiz listing and detail pages
 │   │   ├── leaderboard/      # Leaderboard page
 │   │   ├── profile/          # Profile page
 │   │   └── page.tsx          # Home page
-│   ├── components/
-│   │   ├── Navbar.tsx        # Navigation
-│   │   └── ui/               # UI components
-│   └── lib/
-│       └── prisma.ts         # Prisma client
-├── prisma/
-│   └── schema.prisma         # Database schema
-├── .env.local                # Environment variables
-└── package.json
+│   ├── components/           # Shared components
+│   └── lib/                  # Utilities and helpers
+├── prisma/                   # Prisma schema and migrations
+├── public/                   # Static assets
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-## Future Enhancements
+## Useful commands
 
-- 🤖 AI Chat Helper for quiz explanations
-- 📱 Mobile app
-- 🎨 Quiz customization options
-- 👥 Multiplayer quiz battles
-- 🏅 Badges and achievements
-- 📧 Email notifications
-- 🔍 Advanced search and filtering
-- 📈 Analytics dashboard
+- `npm run dev` — start dev server
+- `npm run build` — build for production
+- `npm run lint` — run ESLint
+- `npx prisma migrate dev` — apply DB migrations
+- `npx prisma studio` — open Prisma admin UI
 
-## Contributing
+## Notes
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For issues and questions, please create an issue on GitHub.
+- Keep `.env.local` out of GitHub.
+- Use `git push origin main` to save your work.
+- Use `git pull origin main` on another device to get the latest changes.
 
 ---
 
-Made with ❤️ by QuizTime Team
+Made with ❤️ for QuizTime

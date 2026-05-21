@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
+import { getPrismaUserIdFromRequest } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET all quizzes or search
@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
 // POST create new quiz
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const userId = await getPrismaUserIdFromRequest(request);
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         description: description || "",
         category: category || "general",
         difficulty: difficulty || "medium",
-        authorId: session.user.id,
+        authorId: userId,
         questions: {
           create: questions.map((q: any) => ({
             text: q.text,

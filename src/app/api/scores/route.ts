@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthSession } from "@/lib/auth";
+import { getPrismaUserIdFromRequest } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 
 // POST submit quiz answers and save score
 export async function POST(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const userId = await getPrismaUserIdFromRequest(request);
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Create score record
     const score = await prisma.score.create({
       data: {
-        userId: session.user.id,
+        userId,
         quizId,
         points: correctCount,
         totalQuestions: quiz.questions.length,
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
 // GET user scores
 export async function GET(request: NextRequest) {
   try {
-    const session = await getAuthSession();
+    const userId = await getPrismaUserIdFromRequest(request);
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     }
 
     const scores = await prisma.score.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       include: {
         quiz: { select: { id: true, title: true, category: true } },
       },
