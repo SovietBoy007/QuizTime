@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrismaUserIdFromRequest } from "@/lib/server-auth";
-import { prisma } from "@/lib/prisma";
+import { getPrismaUserIdFromRequest } from "@/lib/prisma-auth";
+import { getPrisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // POST submit quiz answers and save score
 export async function POST(request: NextRequest) {
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the quiz and its questions
-    const quiz = await prisma.quiz.findUnique({
+    const quiz = await getPrisma().quiz.findUnique({
       where: { id: quizId },
       include: {
         questions: {
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
     const percentage = (correctCount / quiz.questions.length) * 100;
 
     // Create score record
-    const score = await prisma.score.create({
+    const score = await getPrisma().score.create({
       data: {
         userId,
         quizId,
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const scores = await prisma.score.findMany({
+    const scores = await getPrisma().score.findMany({
       where: { userId },
       include: {
         quiz: { select: { id: true, title: true, category: true } },

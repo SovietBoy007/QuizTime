@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrismaUserIdFromRequest } from "@/lib/server-auth";
-import { prisma } from "@/lib/prisma";
+import { getPrismaUserIdFromRequest } from "@/lib/prisma-auth";
+import { getPrisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 // GET all quizzes or search
 export async function GET(request: NextRequest) {
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category;
     if (difficulty) where.difficulty = difficulty;
 
-    const quizzes = await prisma.quiz.findMany({
+    const quizzes = await getPrisma().quiz.findMany({
       where,
       include: {
         author: { select: { id: true, username: true } },
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const quiz = await prisma.quiz.create({
+    const quiz = await getPrisma().quiz.create({
       data: {
         title,
         description: description || "",

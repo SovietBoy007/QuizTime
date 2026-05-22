@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +11,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const quiz = await prisma.quiz.findUnique({
+    const quiz = await getPrisma().quiz.findUnique({
       where: { id },
       include: {
         author: { select: { id: true, username: true } },
