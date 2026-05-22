@@ -61,20 +61,32 @@ function mapDocsFromNamedCollection(
 async function loadFromNamedCollectionClient(
   collectionName: string
 ): Promise<Quiz[]> {
-  const snapshot = await getDocs(collection(db, collectionName));
-  return mapDocsFromNamedCollection(
-    collectionName,
-    snapshot.docs.map((d) => ({ id: d.id, data: () => d.data() }))
-  );
+  try {
+    const snapshot = await getDocs(collection(db, collectionName));
+    const mapped = mapDocsFromNamedCollection(
+      collectionName,
+      snapshot.docs.map((d) => ({ id: d.id, data: () => d.data() }))
+    );
+    console.log(
+      `[QuizCatalog client] "${collectionName}": ${snapshot.size} docs → ${mapped.length} valid quiz(zes)`
+    );
+    return mapped;
+  } catch (err) {
+    console.warn(
+      `[QuizCatalog client] Failed to read collection "${collectionName}":`,
+      err
+    );
+    return [];
+  }
 }
 
 async function loadFromTopicCollectionsClient(): Promise<Quiz[]> {
-  const results = await Promise.all(
+  const results = await Promise.allSettled(
     QUIZ_TOPIC_COLLECTION_IDS.map((topicId) =>
       loadFromNamedCollectionClient(topicId)
     )
   );
-  return results.flat();
+  return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }
 
 export async function loadQuizCatalogClient(): Promise<QuizCatalog> {
@@ -89,17 +101,24 @@ export async function loadQuizCatalogClient(): Promise<QuizCatalog> {
     }
   }
 
-  const fromTopics = await loadFromTopicCollectionsClient();
-  if (fromTopics.length > 0) {
-    quizzes = mergeUniqueQuizzes(quizzes, fromTopics);
-    if (quizzes.length === fromTopics.length) {
-      source = "topic-collection";
+  try {
+    const fromTopics = await loadFromTopicCollectionsClient();
+    if (fromTopics.length > 0) {
+      quizzes = mergeUniqueQuizzes(quizzes, fromTopics);
+      if (quizzes.length === fromTopics.length) {
+        source = "topic-collection";
+      }
     }
+  } catch (err) {
+    console.warn("[QuizCatalog client] Topic collection scan failed:", err);
   }
 
   const firestoreHadQuizzes = quizzes.length > 0;
 
   if (quizzes.length === 0) {
+    console.error(
+      "[QuizCatalog client] All Firestore paths returned 0 quizzes — using bundled fallback."
+    );
     return {
       quizzes: [...SAMPLE_QUIZZES],
       source: "bundled-fallback",
@@ -107,6 +126,9 @@ export async function loadQuizCatalogClient(): Promise<QuizCatalog> {
     };
   }
 
+  console.log(
+    `[QuizCatalog client] Total ${quizzes.length} quiz(zes) from source "${source}"`
+  );
   return { quizzes, source, firestoreHadQuizzes };
 }
 

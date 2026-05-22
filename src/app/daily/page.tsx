@@ -49,15 +49,25 @@ export default function DailyPage() {
       setFirestoreEmpty(false);
 
       try {
-        const userSnap = await getDoc(doc(db, "users", userId));
-        const fields = readDailyQuizFields(userSnap.data());
-        const done = isDailyQuizCompletedToday(fields.lastQuizDate);
+        console.log(`[DailyPage] Loading daily quiz for userId=${userId}`);
 
-        if (!cancelled) {
-          setCompletedToday(done);
+        let completedAlready = false;
+        try {
+          const userSnap = await getDoc(doc(db, "users", userId));
+          const fields = readDailyQuizFields(userSnap.data());
+          console.log(
+            `[DailyPage] User fields — lastQuizDate=${fields.lastQuizDate ?? "none"}, dailyQuizId=${fields.dailyQuizId ?? "none"}, streakDays=${fields.streakDays}`
+          );
+          completedAlready = isDailyQuizCompletedToday(fields.lastQuizDate);
+        } catch (err) {
+          console.warn("[DailyPage] Could not read user doc (proceeding):", err);
         }
 
-        if (done) {
+        if (!cancelled) {
+          setCompletedToday(completedAlready);
+        }
+
+        if (completedAlready) {
           if (!cancelled) setLoading(false);
           return;
         }
@@ -65,6 +75,10 @@ export default function DailyPage() {
         const assignment = await resolveDailyQuizAssignmentClient(userId);
 
         if (cancelled) return;
+
+        console.log(
+          `[DailyPage] Assignment result — quizId=${assignment.quizId ?? "null"}, firestoreEmpty=${assignment.firestoreEmpty}`
+        );
 
         setFirestoreEmpty(assignment.firestoreEmpty);
 
@@ -80,15 +94,22 @@ export default function DailyPage() {
         const data = await fetchQuizById(assignment.quizId);
         if (cancelled) return;
 
+        console.log(
+          `[DailyPage] Fetched quiz — id=${data?.id ?? "null"}, title="${data?.title ?? "n/a"}", questions=${data?.questions.length ?? 0}`
+        );
+
         if (!data) {
           setError("Quiz-ul zilei nu a putut fi încărcat.");
           setQuiz(null);
         } else {
           setQuiz(data);
         }
-      } catch {
+      } catch (err) {
+        console.error("[DailyPage] Unexpected error loading daily quiz:", err);
         if (!cancelled) {
-          setError("Nu am putut încărca quiz-ul Daily.");
+          const msg =
+            err instanceof Error ? err.message : "Eroare necunoscută";
+          setError(`Nu am putut încărca quiz-ul Daily. (${msg})`);
         }
       } finally {
         if (!cancelled) setLoading(false);
