@@ -34,7 +34,16 @@ export async function resolveDailyQuizAssignment(
   const quizzes = catalog.quizzes;
   const firestoreEmpty = !catalog.firestoreHadQuizzes;
 
+  console.log(
+    `[DailyQuiz] userId=${userId} — catalog source="${catalog.source}", ` +
+      `quizzes=${quizzes.length}, firestoreHadQuizzes=${catalog.firestoreHadQuizzes}`
+  );
+
   if (quizzes.length === 0) {
+    console.error(
+      `[DailyQuiz] CRITICAL: No quizzes available for user=${userId}. ` +
+        "Firestore 'quizzes' collection is empty. Run `npm run seed:quizzes`."
+    );
     return { quizId: null, firestoreEmpty: true };
   }
 

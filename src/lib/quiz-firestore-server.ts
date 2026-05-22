@@ -144,12 +144,7 @@ export async function adminFetchLeaderboard(
   limit = 10,
   xpFilter: LeaderboardXpFilter = "total"
 ): Promise<LeaderboardEntry[]> {
-  try {
-    return await fetchLeaderboardFromFirestore(limit, xpFilter);
-  } catch (error) {
-    console.error("adminFetchLeaderboard failed:", error);
-    return [];
-  }
+  return fetchLeaderboardFromFirestore(limit, xpFilter);
 }
 
 async function fetchLeaderboardFromFirestore(
@@ -158,6 +153,9 @@ async function fetchLeaderboardFromFirestore(
 ): Promise<LeaderboardEntry[]> {
   const db = getAdminFirestore();
   const resultsSnapshot = await db.collection("results").get();
+  console.log(
+    `[Leaderboard] Fetched ${resultsSnapshot.size} result doc(s) from Firestore`
+  );
 
   const totals = aggregateTotalScoresByUser(
     resultsSnapshot.docs.map((doc) => {

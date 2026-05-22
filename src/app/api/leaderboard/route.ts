@@ -24,9 +24,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const leaderboard = await adminFetchLeaderboard(limit, xpFilter);
+    console.log(
+      `[Leaderboard] Returning ${leaderboard.length} entries (filter: ${xpFilter}, limit: ${limit})`
+    );
     return NextResponse.json(leaderboard, { status: 200 });
   } catch (error) {
-    console.error("Error fetching leaderboard:", error);
-    return NextResponse.json([], { status: 200 });
+    console.error("[Leaderboard] Failed to fetch leaderboard:", error);
+    return NextResponse.json(
+      { error: "Failed to load leaderboard" },
+      { status: 500 }
+    );
   }
 }

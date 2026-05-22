@@ -176,6 +176,9 @@ export async function loadQuizCatalogAdmin(
       firestore,
       name
     );
+    console.log(
+      `[QuizCatalog] Firestore collection "${name}": ${fromCollection.length} quiz(zes) found`
+    );
     if (fromCollection.length > 0) {
       quizzes = mergeUniqueQuizzes(quizzes, fromCollection);
       source = name;
@@ -193,6 +196,10 @@ export async function loadQuizCatalogAdmin(
   const firestoreHadQuizzes = quizzes.length > 0;
 
   if (quizzes.length === 0) {
+    console.error(
+      "[QuizCatalog] CRITICAL: All Firestore collections returned 0 quizzes. " +
+        "Falling back to bundled data. Run `npm run seed:quizzes` to populate Firestore."
+    );
     return {
       quizzes: [...SAMPLE_QUIZZES],
       source: "bundled-fallback",
@@ -200,6 +207,9 @@ export async function loadQuizCatalogAdmin(
     };
   }
 
+  console.log(
+    `[QuizCatalog] Loaded ${quizzes.length} quiz(zes) from source "${source}"`
+  );
   return { quizzes, source, firestoreHadQuizzes };
 }
 
