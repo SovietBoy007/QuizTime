@@ -1,31 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrisma } from "@/lib/prisma";
+import { adminFetchQuizById } from "@/lib/quiz-firestore-server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
-    const quiz = await getPrisma().quiz.findUnique({
-      where: { id },
-      include: {
-        author: { select: { id: true, username: true } },
-        questions: {
-          include: { answers: true },
-        },
-      },
-    });
+    const quiz = await adminFetchQuizById(id);
 
     if (!quiz) {
-      return NextResponse.json(
-        { error: "Quiz not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
     return NextResponse.json(quiz, { status: 200 });

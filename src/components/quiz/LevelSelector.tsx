@@ -4,18 +4,32 @@ import {
   getQuestionCountsByLevel,
 } from "@/lib/quiz-levels";
 import { getSessionRangeLabel } from "@/lib/quiz-session";
-import type { Quiz, SchoolLevel } from "@/types/quiz";
+import { TIMER_DURATION_LABELS, TIMED_XP_MULTIPLIERS } from "@/lib/gamification";
+import type { Quiz, SchoolLevel, TimerDuration } from "@/types/quiz";
 
 type LevelSelectorProps = {
   quiz: Quiz;
   onSelect: (level: SchoolLevel) => void;
+  timedMode?: boolean;
+  timerDuration?: TimerDuration;
 };
 
-export default function LevelSelector({ quiz, onSelect }: LevelSelectorProps) {
+export default function LevelSelector({ quiz, onSelect, timedMode = false, timerDuration }: LevelSelectorProps) {
   const poolCounts = getQuestionCountsByLevel(quiz.questions);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6 sm:p-10">
+      {timedMode && timerDuration && (
+        <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
+          <span className="text-xl">⏱</span>
+          <div className="text-sm text-orange-800 dark:text-orange-300">
+            <span className="font-semibold">Mod Cronometrat</span>
+            {" · "}{TIMER_DURATION_LABELS[timerDuration]}
+            {" · "}
+            <span className="font-bold">×{TIMED_XP_MULTIPLIERS[timerDuration]} XP</span>
+          </div>
+        </div>
+      )}
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 text-center">
         Alege nivelul
       </h2>

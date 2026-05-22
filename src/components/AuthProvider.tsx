@@ -14,6 +14,7 @@ import { auth, db } from "@/lib/firebase";
 type AuthContextValue = {
   user: User | null;
   username: string | null;
+  avatarId: number;
   loading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -21,33 +22,48 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function fetchUsername(uid: string): Promise<string | null> {
+async function fetchProfile(
+  uid: string
+): Promise<{ username: string | null; avatarId: number }> {
   const snapshot = await getDoc(doc(db, "users", uid));
-  if (!snapshot.exists()) return null;
+  if (!snapshot.exists()) return { username: null, avatarId: 1 };
   const data = snapshot.data();
-  return typeof data.username === "string" ? data.username : null;
+  return {
+    username: typeof data.username === "string" ? data.username : null,
+    avatarId:
+      typeof data.avatarId === "number" && data.avatarId >= 1 && data.avatarId <= 21
+        ? data.avatarId
+        : 1,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string | null>(null);
+  const [avatarId, setAvatarId] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = useCallback(async () => {
     if (!auth.currentUser) {
       setUsername(null);
+      setAvatarId(1);
       return;
     }
-    setUsername(await fetchUsername(auth.currentUser.uid));
+    const profile = await fetchProfile(auth.currentUser.uid);
+    setUsername(profile.username);
+    setAvatarId(profile.avatarId);
   }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        setUsername(await fetchUsername(firebaseUser.uid));
+        const profile = await fetchProfile(firebaseUser.uid);
+        setUsername(profile.username);
+        setAvatarId(profile.avatarId);
       } else {
         setUsername(null);
+        setAvatarId(1);
       }
       setLoading(false);
     });
@@ -59,11 +75,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
     setUser(null);
     setUsername(null);
+    setAvatarId(1);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, username, loading, logout, refreshProfile }}
+      value={{ user, username, avatarId, loading, logout, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

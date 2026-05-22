@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { fetchQuizById } from "@/lib/quiz-firestore";
 import { buildQuizSession } from "@/lib/quiz-session";
-import type { Quiz, SchoolLevel } from "@/types/quiz";
+import type { Quiz, SchoolLevel, TimerDuration } from "@/types/quiz";
 import QuizPlayer from "@/components/quiz/QuizPlayer";
 import LevelSelector from "@/components/quiz/LevelSelector";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,15 @@ import { Button } from "@/components/ui/button";
 export default function QuizPlayPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const quizId = params?.id as string;
+
+  const timedMode = searchParams.get("mode") === "timed";
+  const rawDuration = Number(searchParams.get("duration"));
+  const timerDuration: TimerDuration =
+    rawDuration === 300 || rawDuration === 120 || rawDuration === 60 || rawDuration === 30
+      ? rawDuration
+      : 300;
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<SchoolLevel | null>(null);
@@ -106,9 +114,14 @@ export default function QuizPlayPage() {
         </div>
 
         {!selectedLevel ? (
-          <LevelSelector quiz={quiz} onSelect={setSelectedLevel} />
+          <LevelSelector quiz={quiz} onSelect={setSelectedLevel} timedMode={timedMode} timerDuration={timerDuration} />
         ) : activeQuiz && activeQuiz.questions.length > 0 ? (
-          <QuizPlayer quiz={activeQuiz} level={selectedLevel} />
+          <QuizPlayer
+            quiz={activeQuiz}
+            level={selectedLevel}
+            timedMode={timedMode}
+            timerDuration={timedMode ? timerDuration : undefined}
+          />
         ) : (
           <div className="text-center bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
             <p className="text-gray-600 dark:text-gray-300 mb-4">

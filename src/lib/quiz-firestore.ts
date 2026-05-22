@@ -25,6 +25,11 @@ import {
   type LeaderboardEntry,
   type LeaderboardXpFilter,
 } from "@/lib/gamification";
+import {
+  fetchQuizByIdFromSourcesClient,
+  loadQuizCatalogClient,
+} from "@/lib/quiz-collection-sources";
+import { mapResultDoc } from "@/lib/quiz-doc-mappers";
 import { checkAndAwardBadges } from "@/lib/badges";
 import { quizHasLevel } from "@/lib/quiz-levels";
 import type { BadgeId } from "@/types/badges";
@@ -36,91 +41,13 @@ import type {
   SchoolLevel,
 } from "@/types/quiz";
 
-function mapResultDoc(id: string, data: DocumentData): QuizResult {
-  const createdAt = data.createdAt as Timestamp | undefined;
-  return {
-    id,
-    userId: data.userId ?? "",
-    score: typeof data.score === "number" ? data.score : 0,
-    totalQuestions:
-      typeof data.totalQuestions === "number" ? data.totalQuestions : 0,
-    topic: data.topic ?? "general",
-    level: isSchoolLevel(data.level) ? data.level : "gimnazial",
-    createdAt: createdAt?.toDate?.() ?? null,
-  };
-}
-
-function normalizeQuestion(
-  raw: DocumentData,
-  index: number,
-  quizCategory: string
-): Quiz["questions"][number] | null {
-  const level = raw.level;
-  const validLevel =
-    level === "primar" || level === "gimnazial" || level === "liceu"
-      ? level
-      : "gimnazial";
-
-  if (!raw.question || !Array.isArray(raw.answers) || !raw.correctAnswerId) {
-    return null;
-  }
-
-  const topic =
-    typeof raw.topic === "string" && raw.topic.length > 0
-      ? raw.topic
-      : quizCategory;
-
-  return {
-    id: raw.id ?? `q-${index}`,
-    level: validLevel,
-    topic,
-    question: raw.question,
-    answers: raw.answers,
-    correctAnswerId: raw.correctAnswerId,
-    explanation: raw.explanation ?? "",
-  };
-}
-
-function mapQuizDoc(id: string, data: DocumentData): Quiz | null {
-  const rawQuestions = data.questions;
-  if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
-    return null;
-  }
-
-  const category = data.category ?? "general";
-
-  const questions = rawQuestions
-    .map((item, index) =>
-      normalizeQuestion(item as DocumentData, index, category)
-    )
-    .filter((q): q is Quiz["questions"][number] => q !== null);
-
-  if (questions.length === 0) {
-    return null;
-  }
-
-  return {
-    id,
-    title: data.title ?? "Quiz fără titlu",
-    description: data.description ?? "",
-    category: data.category ?? "general",
-    questions,
-  };
-}
-
 export async function fetchQuizzes(
   category?: string,
   level?: SchoolLevel
 ): Promise<Quiz[]> {
   try {
-    const snapshot = await getDocs(collection(db, "quizzes"));
-    let quizzes = snapshot.docs
-      .map((d) => mapQuizDoc(d.id, d.data()))
-      .filter((q): q is Quiz => q !== null);
-
-    if (quizzes.length === 0) {
-      quizzes = [...SAMPLE_QUIZZES];
-    }
+    const catalog = await loadQuizCatalogClient();
+    let quizzes = catalog.quizzes;
 
     if (category) {
       quizzes = quizzes.filter((q) => q.category === category);
@@ -141,16 +68,11 @@ export async function fetchQuizzes(
 
 export async function fetchQuizById(quizId: string): Promise<Quiz | null> {
   try {
-    const snapshot = await getDoc(doc(db, "quizzes", quizId));
-    if (snapshot.exists()) {
-      const quiz = mapQuizDoc(snapshot.id, snapshot.data());
-      if (quiz) return quiz;
-    }
+    return await fetchQuizByIdFromSourcesClient(quizId);
   } catch (error) {
     console.error("Failed to fetch quiz from Firestore:", error);
+    return SAMPLE_QUIZZES.find((q) => q.id === quizId) ?? null;
   }
-
-  return SAMPLE_QUIZZES.find((q) => q.id === quizId) ?? null;
 }
 
 /**
@@ -176,6 +98,8 @@ export async function saveQuizResult(
     ? existingData.level
     : null;
 
+  const multiplier = result.xpMultiplier ?? 1;
+
   await setDoc(docRef, {
     userId: result.userId,
     score: result.score,
@@ -183,6 +107,7 @@ export async function saveQuizResult(
     topic: result.topic,
     level: result.level,
     createdAt: serverTimestamp(),
+    ...(result.timedMode ? { timedMode: true, timerDuration: result.timerDuration ?? null, xpMultiplier: multiplier } : {}),
   });
 
   if (previousLevel && previousLevel !== result.level) {
@@ -191,12 +116,12 @@ export async function saveQuizResult(
       userRef,
       {
         [previousField]: increment(-scoreToXp(previousScore)),
-        [xpField]: increment(scoreToXp(result.score)),
+        [xpField]: increment(Math.round(scoreToXp(result.score) * multiplier)),
       },
       { merge: true }
     );
   } else {
-    const xpDelta = scoreToXp(result.score - previousScore);
+    const xpDelta = Math.round(scoreToXp(result.score - previousScore) * multiplier);
     if (xpDelta !== 0) {
       await setDoc(userRef, { [xpField]: increment(xpDelta) }, { merge: true });
     }
@@ -206,8 +131,8 @@ export async function saveQuizResult(
   const categoryXp = readCategoryXp(userSnap.data());
   const xpGained =
     previousLevel && previousLevel !== result.level
-      ? scoreToXp(result.score)
-      : scoreToXp(result.score - previousScore);
+      ? Math.round(scoreToXp(result.score) * multiplier)
+      : Math.round(scoreToXp(result.score - previousScore) * multiplier);
 
   let newBadges: BadgeId[] = [];
   const isNewAttempt = !existing.exists();
@@ -228,6 +153,8 @@ export async function saveQuizResult(
     categoryXpTotal: categoryXp[xpField],
     level: result.level,
     newBadges,
+    xpMultiplier: multiplier > 1 ? multiplier : undefined,
+    timedMode: result.timedMode,
   };
 }
 
@@ -280,7 +207,11 @@ export async function fetchLeaderboard(
 export async function fetchUserResults(userId: string): Promise<QuizResult[]> {
   const q = query(collection(db, "results"), where("userId", "==", userId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => mapResultDoc(d.id, d.data()));
+  return snapshot.docs.map((d) => {
+    const data = d.data();
+    const createdAt = data.createdAt as Timestamp | undefined;
+    return mapResultDoc(d.id, data, createdAt);
+  });
 }
 
 /** Live listener — dashboard stays in sync when new results are saved. */
@@ -293,7 +224,13 @@ export function subscribeUserResults(
   return onSnapshot(
     q,
     (snapshot) => {
-      onResults(snapshot.docs.map((d) => mapResultDoc(d.id, d.data())));
+      onResults(
+        snapshot.docs.map((d) => {
+          const data = d.data();
+          const createdAt = data.createdAt as Timestamp | undefined;
+          return mapResultDoc(d.id, data, createdAt);
+        })
+      );
     },
     (error) => {
       console.error("Failed to subscribe to user results:", error);

@@ -1,88 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPrismaUserIdFromRequest } from "@/lib/prisma-auth";
-import { getPrisma } from "@/lib/prisma";
+import { getAuthenticatedUid } from "@/lib/server-auth";
+import {
+  adminFetchQuizById,
+  adminFetchUserResults,
+  adminSaveQuizResult,
+} from "@/lib/quiz-firestore-server";
+import { isSchoolLevel } from "@/lib/gamification";
+import type { QuizResultPayload, SchoolLevel } from "@/types/quiz";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// POST submit quiz answers and save score
+function scoreFromAnswers(
+  quiz: NonNullable<Awaited<ReturnType<typeof adminFetchQuizById>>>,
+  answers: Record<string, string>
+): number {
+  let correctCount = 0;
+
+  for (const question of quiz.questions) {
+    if (answers[question.id] === question.correctAnswerId) {
+      correctCount++;
+    }
+  }
+
+  return correctCount;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getPrismaUserIdFromRequest(request);
+    const userId = await getAuthenticatedUid(request);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { quizId, answers, timeSpent } = body;
+    const {
+      quizId,
+      answers,
+      attemptId,
+      score,
+      totalQuestions,
+      topic,
+      level,
+    } = body as {
+      quizId?: string;
+      answers?: Record<string, string>;
+      attemptId?: string;
+      score?: number;
+      totalQuestions?: number;
+      topic?: string;
+      level?: SchoolLevel;
+    };
 
-    if (!quizId || !answers) {
+    let payload: QuizResultPayload;
+    const resultAttemptId = attemptId ?? crypto.randomUUID();
+
+    if (
+      typeof score === "number" &&
+      typeof totalQuestions === "number" &&
+      topic &&
+      isSchoolLevel(level)
+    ) {
+      payload = { userId, score, totalQuestions, topic, level };
+    } else if (quizId && answers) {
+      const quiz = await adminFetchQuizById(quizId);
+
+      if (!quiz) {
+        return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+      }
+
+      const correctCount = scoreFromAnswers(quiz, answers);
+      const resolvedLevel =
+        quiz.questions.find((q) => isSchoolLevel(q.level))?.level ?? "gimnazial";
+
+      payload = {
+        userId,
+        score: correctCount,
+        totalQuestions: quiz.questions.length,
+        topic: quiz.category,
+        level: resolvedLevel,
+      };
+    } else {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Get the quiz and its questions
-    const quiz = await getPrisma().quiz.findUnique({
-      where: { id: quizId },
-      include: {
-        questions: {
-          include: { answers: { where: { isCorrect: true } } },
-        },
-      },
-    });
-
-    if (!quiz) {
-      return NextResponse.json(
-        { error: "Quiz not found" },
-        { status: 404 }
-      );
-    }
-
-    // Calculate score
-    let correctCount = 0;
-    const userAnswers: any[] = [];
-
-    for (const question of quiz.questions) {
-      const userAnswer = answers[question.id];
-      const correctAnswerId = question.answers[0]?.id;
-      const isCorrect = userAnswer === correctAnswerId;
-
-      if (isCorrect) correctCount++;
-
-      userAnswers.push({
-        questionId: question.id,
-        selectedAnswerId: userAnswer,
-        isCorrect,
-      });
-    }
-
-    const percentage = (correctCount / quiz.questions.length) * 100;
-
-    // Create score record
-    const score = await getPrisma().score.create({
-      data: {
-        userId,
-        quizId,
-        points: correctCount,
-        totalQuestions: quiz.questions.length,
-        percentage,
-        timeSpent: timeSpent || 0,
-        userAnswers: {
-          create: userAnswers,
-        },
-      },
-      include: {
-        userAnswers: true,
-      },
-    });
-
-    return NextResponse.json(score, { status: 201 });
+    const saved = await adminSaveQuizResult(resultAttemptId, payload);
+    return NextResponse.json(saved, { status: 201 });
   } catch (error) {
     console.error("Error submitting quiz:", error);
     return NextResponse.json(
@@ -92,32 +99,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET user scores
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getPrismaUserIdFromRequest(request);
+    const userId = await getAuthenticatedUid(request);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const scores = await getPrisma().score.findMany({
-      where: { userId },
-      include: {
-        quiz: { select: { id: true, title: true, category: true } },
-      },
-      orderBy: { completedAt: "desc" },
-    });
-
+    const scores = await adminFetchUserResults(userId);
     return NextResponse.json(scores, { status: 200 });
   } catch (error) {
     console.error("Error fetching scores:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch scores" },
-      { status: 500 }
-    );
+    return NextResponse.json([], { status: 200 });
   }
 }

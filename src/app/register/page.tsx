@@ -72,6 +72,7 @@ export default function RegisterPage() {
         xpLiceal: 0,
         badges: [],
         streakCount: 0,
+        streakDays: 0,
         createdAt: serverTimestamp(),
       });
 

@@ -1,5 +1,10 @@
 export type SchoolLevel = "primar" | "gimnazial" | "liceu";
 
+export type QuizMode = "normal" | "timed";
+
+/** Timed-mode durations in seconds: 300s=5min, 120s=2min, 60s=1min, 30s=30sec */
+export type TimerDuration = 300 | 120 | 60 | 30;
+
 export type QuizAnswer = {
   id: string;
   text: string;
@@ -36,6 +41,9 @@ export type QuizResultPayload = {
   totalQuestions: number;
   topic: string;
   level: SchoolLevel;
+  xpMultiplier?: number;
+  timedMode?: boolean;
+  timerDuration?: TimerDuration;
 };
 
 import type { BadgeId } from "@/types/badges";
@@ -46,6 +54,8 @@ export type QuizSaveOutcome = {
   categoryXpTotal: number;
   level: SchoolLevel;
   newBadges: BadgeId[];
+  xpMultiplier?: number;
+  timedMode?: boolean;
 };
 
 export type QuizResultDocument = QuizResultPayload & {

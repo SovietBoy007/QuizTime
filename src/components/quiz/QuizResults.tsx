@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { LEVEL_LABELS, LEVEL_STYLES } from "@/lib/quiz-levels";
 import { BADGE_DEFINITIONS } from "@/lib/badges";
 import { fireQuizConfetti } from "@/lib/quiz-confetti";
-import type { QuizSaveOutcome, SchoolLevel } from "@/types/quiz";
+import { TIMER_DURATION_LABELS } from "@/lib/gamification";
+import type { QuizSaveOutcome, SchoolLevel, TimerDuration } from "@/types/quiz";
 
 type QuizResultsProps = {
   quizTitle: string;
@@ -20,6 +21,9 @@ type QuizResultsProps = {
   saved?: boolean;
   xpOutcome: QuizSaveOutcome | null;
   wrongCount?: number;
+  timedMode?: boolean;
+  timerExpired?: boolean;
+  timerDuration?: TimerDuration;
   onReview?: () => void;
 };
 
@@ -35,6 +39,9 @@ export default function QuizResults({
   saved,
   xpOutcome,
   wrongCount = 0,
+  timedMode = false,
+  timerExpired = false,
+  timerDuration,
   onReview,
 }: QuizResultsProps) {
   const confettiFiredRef = useRef(false);
@@ -66,11 +73,18 @@ export default function QuizResults({
       </div>
 
       <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-        Quiz finalizat!
+        {timerExpired ? "Timp expirat!" : "Quiz finalizat!"}
       </h2>
       <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-        {gradeMessage}
+        {timerExpired ? "Cronometrul a ajuns la 0 — scorul tău a fost calculat automat." : gradeMessage}
       </p>
+
+      {timedMode && timerDuration && (
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 text-sm font-medium mb-4">
+          <span>⏱</span>
+          <span>Mod Cronometrat · {TIMER_DURATION_LABELS[timerDuration]}</span>
+        </div>
+      )}
 
       <p className="text-gray-500 dark:text-gray-400 mb-6">{quizTitle}</p>
 
@@ -97,6 +111,14 @@ export default function QuizResults({
                 {score}/{totalQuestions}
               </dd>
             </div>
+            {xpOutcome.xpMultiplier && xpOutcome.timedMode && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-600 dark:text-gray-300">Multiplicator ⏱</dt>
+                <dd className="font-bold text-orange-600 dark:text-orange-400">
+                  ×{xpOutcome.xpMultiplier}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-gray-600 dark:text-gray-300">XP câștigat</dt>
               <dd className="font-bold text-purple-600 dark:text-purple-400">

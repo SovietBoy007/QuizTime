@@ -1,7 +1,26 @@
-import type { SchoolLevel } from "@/types/quiz";
+import type { SchoolLevel, TimerDuration } from "@/types/quiz";
 
 /** XP earned per correct answer (score point). */
 export const XP_PER_SCORE_POINT = 10;
+
+/** XP multipliers for each timed-mode duration. */
+export const TIMED_XP_MULTIPLIERS: Record<TimerDuration, number> = {
+  300: 1.1,
+  120: 1.3,
+  60: 1.6,
+  30: 2.0,
+};
+
+export const TIMER_DURATION_LABELS: Record<TimerDuration, string> = {
+  300: "5 minute",
+  120: "2 minute",
+  60: "1 minut",
+  30: "30 secunde",
+};
+
+export function getTimedXpMultiplier(duration: TimerDuration): number {
+  return TIMED_XP_MULTIPLIERS[duration];
+}
 
 export type CategoryXpField = "xpPrimar" | "xpGimnazial" | "xpLiceal";
 
@@ -29,6 +48,7 @@ export type LeaderboardEntry = {
   totalScore: number;
   xp: number;
   rank: number;
+  avatarId?: number;
 };
 
 export function scoreToXp(score: number): number {

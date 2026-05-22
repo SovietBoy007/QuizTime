@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QuizTime - Test Your Knowledge",
-  description: "Interactive quizzes, leaderboards, and learning",
+  title: "QuizTime - Quizuri Interactive & Gamificare",
+  description:
+    "Testează-ți cunoștințele cu quizuri interactive, câștigă XP, deblochează insigne și concurează în clasament.",
 };
 
 const themeScript = `
@@ -39,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ro"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

@@ -1,3 +1,4 @@
+import { randomizeQuestionAnswers } from "@/lib/quiz-answer-shuffle";
 import { filterQuestionsByLevel } from "@/lib/quiz-levels";
 import type { Quiz, QuizQuestion, SchoolLevel } from "@/types/quiz";
 
@@ -40,7 +41,9 @@ export function pickSessionQuestions(
   const desired = randomInt(min, max);
   const count = Math.min(desired, levelPool.length);
 
-  return shuffle(levelPool).slice(0, count);
+  return shuffle(levelPool)
+    .slice(0, count)
+    .map((question) => randomizeQuestionAnswers(question));
 }
 
 /** Builds a quiz document for one play session (subset of the topic pool). */

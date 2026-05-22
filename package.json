@@ -4,19 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:quizzes": "npx tsx scripts/seed-quizzes.ts"
+    "seed:quizzes": "npx tsx scripts/seed-quizzes.ts",
+    "deploy:rules": "firebase deploy --only firestore:rules"
   },
   "dependencies": {
-    "@prisma/client": "^5.0.0",
     "canvas-confetti": "^1.9.4",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.6.0",
     "next": "16.2.6",
-    "prisma": "^5.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -28,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "firebase-tools": "^14.27.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

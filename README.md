@@ -1,6 +1,6 @@
-# QuizTime - Interactive Quiz Platform 🎯
+# QuizTime - Interactive Quiz Platform
 
-A modern quiz application built with Next.js, TypeScript, PostgreSQL, and Prisma.
+A modern quiz application built with Next.js, TypeScript, and Firebase (Auth + Firestore).
 
 ## Quick Start
 
@@ -16,19 +16,40 @@ npm install
 ```
 
 ### 3. Create environment variables
-Create a `.env.local` file in the project root with your secrets:
+Create a `.env.local` file in the project root:
+
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/quiztime"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"
-JWT_SECRET="your-jwt-secret"
+NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-project.appspot.com"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+
+# Server-side (API routes, seed script)
+FIREBASE_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
 ```
 
-### 4. Set up the database
+### 4. Seed quizzes (optional)
 ```bash
-npx prisma migrate dev --name init
-npx prisma generate
+npm run seed:quizzes
 ```
+Requires `serviceAccount.json` in the project root (copy from `serviceAccount.json.example`).
+
+### Firestore security rules
+Rules live in `firestore.rules`.
+
+**Option A — npm script (no global install):**
+```bash
+npm install
+npm run deploy:rules
+```
+First run opens a browser to sign in with Google (`firebase login`).
+
+**Option B — Firebase Console:**  
+Firestore → Rules → paste `firestore.rules` → Publish.
+
+If your Firebase project id is not `quiztime-b875d`, edit `.firebaserc` before deploying.
 
 ### 5. Run the project
 ```bash
@@ -37,73 +58,41 @@ npm run dev
 
 Open: `http://localhost:3000`
 
-## How to continue on another device
-
-1. Install `Git` and `Node.js` on the other device.
-2. Clone the repo:
-```bash
-git clone https://github.com/SovietBoy007/QuizTime.git
-cd QuizTime
-```
-3. Install dependencies:
-```bash
-npm install
-```
-4. Create your own `.env.local` with the correct values.
-5. Run the app:
-```bash
-npm run dev
-```
-
-## Save your work to GitHub
-
-When you finish work locally, run:
-```bash
-git add .
-git commit -m "Save latest QuizTime progress"
-git push origin main
-```
-
-Then on another device:
-```bash
-git pull origin main
-npm install
-```
-
 ## Project structure
 
 ```
 quiztime/
 ├── src/
 │   ├── app/
-│   │   ├── api/              # API routes
-│   │   ├── auth/             # Auth and login pages
-│   │   ├── quizzes/          # Quiz listing and detail pages
-│   │   ├── leaderboard/      # Leaderboard page
-│   │   ├── profile/          # Profile page
-│   │   └── page.tsx          # Home page
-│   ├── components/           # Shared components
-│   └── lib/                  # Utilities and helpers
-├── prisma/                   # Prisma schema and migrations
-├── public/                   # Static assets
-├── package.json
-├── tsconfig.json
-└── README.md
+│   │   ├── api/              # Firestore-backed API routes
+│   │   ├── quizzes/          # Quiz listing and play
+│   │   ├── leaderboard/
+│   │   ├── dashboard/
+│   │   └── ...
+│   ├── components/
+│   ├── data/quizzes/         # Quiz content source
+│   └── lib/                  # Firebase & Firestore helpers
+├── scripts/seed-quizzes.ts   # Seed Firestore from quiz data
+└── package.json
 ```
 
 ## Useful commands
 
 - `npm run dev` — start dev server
-- `npm run build` — build for production
+- `npm run build` — build for production (Vercel-ready)
 - `npm run lint` — run ESLint
-- `npx prisma migrate dev` — apply DB migrations
-- `npx prisma studio` — open Prisma admin UI
+- `npm run seed:quizzes` — upload quizzes to Firestore
+
+## Vercel deployment
+
+1. Connect the repo to Vercel.
+2. Add the same Firebase env vars from `.env.local` in the Vercel dashboard.
+3. Deploy — no database migrations required; data lives in Firestore.
 
 ## Notes
 
-- Keep `.env.local` out of GitHub.
-- Use `git push origin main` to save your work.
-- Use `git pull origin main` on another device to get the latest changes.
+- Keep `.env.local` out of Git.
+- User auth and quiz results use Firebase Auth UID + Firestore collections (`users`, `quizzes`, `results`).
 
 ---
 

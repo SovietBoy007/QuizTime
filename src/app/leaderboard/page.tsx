@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { fetchLeaderboard } from "@/lib/quiz-firestore";
-import {
-  LEADERBOARD_XP_FILTERS,
-  type LeaderboardEntry,
-  type LeaderboardXpFilter,
-} from "@/lib/gamification";
+import type { LeaderboardEntry, LeaderboardXpFilter } from "@/lib/gamification";
+import { LEADERBOARD_XP_FILTERS } from "@/lib/gamification";
+import UserAvatar from "@/components/UserAvatar";
+
+async function fetchLeaderboardFromApi(
+  limit: number,
+  xpFilter: LeaderboardXpFilter
+): Promise<LeaderboardEntry[]> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    xpFilter,
+  });
+  const res = await fetch(`/api/leaderboard?${params}`);
+  if (!res.ok) throw new Error("Leaderboard fetch failed");
+  return res.json() as Promise<LeaderboardEntry[]>;
+}
 
 function rankLabel(rank: number): string {
   if (rank === 1) return "🥇";
@@ -35,14 +45,19 @@ function LeaderboardRow({
         {rankLabel(entry.rank)}
       </td>
       <td className="px-4 sm:px-6 py-4">
-        <span className="font-medium text-gray-900 dark:text-gray-100">
-          @{entry.username}
-        </span>
-        {isCurrentUser ? (
-          <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
-            Tu
-          </span>
-        ) : null}
+        <div className="flex items-center gap-3">
+          <UserAvatar avatarId={entry.avatarId} size={36} />
+          <div>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              @{entry.username}
+            </span>
+            {isCurrentUser ? (
+              <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+                Tu
+              </span>
+            ) : null}
+          </div>
+        </div>
       </td>
       <td className="px-4 sm:px-6 py-4 text-center font-semibold text-purple-600 dark:text-purple-400">
         {entry.xp.toLocaleString()}
@@ -69,10 +84,11 @@ function LeaderboardCard({
           : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
       }`}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-2xl font-bold">{rankLabel(entry.rank)}</span>
-        <div className="text-right">
-          <p className="font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl font-bold w-8 shrink-0">{rankLabel(entry.rank)}</span>
+        <UserAvatar avatarId={entry.avatarId} size={40} />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
             @{entry.username}
           </p>
           {isCurrentUser ? (
@@ -114,7 +130,7 @@ export default function LeaderboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchLeaderboard(10, xpFilter);
+        const data = await fetchLeaderboardFromApi(10, xpFilter);
         if (!cancelled) setEntries(data);
       } catch {
         if (!cancelled) {

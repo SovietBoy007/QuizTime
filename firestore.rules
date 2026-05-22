@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function ownsResultData() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // —— Quizzes (public read, seed/admin writes only via Admin SDK) ——
+    match /quizzes/{quizId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /quiz/{quizId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /sample-quizzes/{quizId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Legacy/alternate topic-named collections
+    match /geografie/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /stiinte/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /istorie/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /matematica/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /informatica/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /limba-romana/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // —— Users (private: only the signed-in owner) ——
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // —— Results (public read for leaderboard; writes only for owner) ——
+    match /results/{resultId} {
+      allow read: if true;
+      allow create: if isSignedIn() && ownsResultData();
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && ownsResultData();
+      allow delete: if false;
+    }
+  }
+}

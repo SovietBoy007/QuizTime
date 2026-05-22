@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
+import DailyQuizCard from "@/components/DailyQuizCard";
 import { subscribeUserResults } from "@/lib/quiz-firestore";
 import {
   computeDashboardStats,
@@ -119,6 +120,8 @@ export default function DashboardPage() {
             <Button>Take a quiz</Button>
           </Link>
         </header>
+
+        <DailyQuizCard userId={user.uid} />
 
         {resultsError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
